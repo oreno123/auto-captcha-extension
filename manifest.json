@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "AutoCaptcha - 全自动验证码识别填充",
+  "version": "1.2.0",
+  "description": "学习验证码识别：选择元素、生成选择器、提取图片、ONNX识别",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "action": {
+    "default_title": "验证码选择器（点击打开侧边栏）"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["lib/selector.js", "content/content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "lib/selector.js",
+        "lib/ort.min.js",
+        "lib/webocr.js",
+        "models/common_q8.onnx",
+        "wasm/*.wasm",
+        "wasm/*.js",
+        "wasm/*.mjs"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  }
+}

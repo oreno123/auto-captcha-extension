@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>验证码选择器</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎯 验证码选择器</h1>
+      <p class="subtitle">侧边栏模式 · 学习验证码识别插件原理</p>
+    </header>
+
+    <main>
+      <!-- 操作按钮区 -->
+      <section class="actions">
+        <button id="pickPairBtn" class="btn btn-primary">
+          <span class="icon">🔗</span>
+          配对选择（图片+输入框）
+        </button>
+        <button id="pickImageBtn" class="btn btn-secondary">
+          <span class="icon">🖱️</span>
+          仅选择图片
+        </button>
+      </section>
+      
+      <section class="actions">
+        <button id="highlightBtn" class="btn btn-success" disabled>
+          <span class="icon">✨</span>
+          高亮显示元素
+        </button>
+        <button id="clearBtn" class="btn btn-secondary">
+          <span class="icon">🗑️</span>
+          清除
+        </button>
+      </section>
+
+      <!-- 自动模式控制区 -->
+      <section class="auto-mode-section">
+        <div class="auto-mode-header">
+          <div class="auto-mode-title">
+            <span class="icon">🤖</span>
+            <span>自动扫描模式</span>
+          </div>
+          <label class="toggle-switch" id="autoModeToggle" title="开启/关闭自动扫描">
+            <input type="checkbox" id="autoModeCheckbox">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="auto-mode-controls">
+          <button id="autoScanOnceBtn" class="btn btn-small btn-secondary" title="立即扫描一次">
+            <span class="icon">🔍</span> 立即扫描
+          </button>
+          <span id="autoScanStatus" class="auto-scan-status off">● 已关闭</span>
+          <span id="autoScanCount" class="auto-scan-count"></span>
+          <button id="clearAutoLogBtn" class="btn btn-small btn-secondary" title="清空日志">
+            🗑️
+          </button>
+        </div>
+      </section>
+
+      <!-- 自动识别日志区 -->
+      <section id="autoLogSection" class="result-section hidden">
+        <h3>📋 自动识别日志</h3>
+        <div id="autoLogList" class="auto-log-list"></div>
+      </section>
+
+      <!-- 状态提示 -->
+      <div id="status" class="status hidden">
+        <span id="statusText">就绪</span>
+      </div>
+
+      <!-- 配对结果展示区 -->
+      <section id="pairSection" class="result-section hidden">
+        <h3>🔗 验证码配对信息</h3>
+        
+        <!-- 图片选择器 -->
+        <div class="info-group">
+          <label>🖼️ 图片选择器:</label>
+          <div class="selector-box">
+            <code id="pairImageSelector"></code>
+            <button id="copyImageSelectorBtn" class="btn-icon" title="复制">📋</button>
+          </div>
+        </div>
+
+        <!-- 输入框选择器 -->
+        <div class="info-group">
+          <label>⌨️ 输入框选择器:</label>
+          <div class="selector-box">
+            <code id="pairInputSelector"></code>
+            <button id="copyInputSelectorBtn" class="btn-icon" title="复制">📋</button>
+          </div>
+        </div>
+
+        <!-- 配对信息 -->
+        <div class="info-group">
+          <label>ℹ️ 配对信息:</label>
+          <div class="info-details">
+            <div><strong>网址:</strong> <span id="pairUrlText"></span></div>
+            <div><strong>域名:</strong> <span id="pairHostText"></span></div>
+            <div><strong>输入框名称:</strong> <span id="pairInputName"></span></div>
+          </div>
+        </div>
+
+        <!-- 图片预览 -->
+        <div class="info-group">
+          <label>🖼️ 图片预览:</label>
+          <div class="image-preview">
+            <img id="pairPreviewImage" alt="验证码图片">
+          </div>
+        </div>
+
+        <!-- 🆕 识别功能区域 -->
+        <div class="ocr-section">
+          <button id="recognizeBtn" class="btn btn-primary" style="width: 100%;">
+            🔍 识别验证码
+          </button>
+          
+          <!-- 识别结果显示 -->
+          <div id="ocrResult" class="ocr-result hidden">
+            <label>识别结果：</label>
+            <div class="result-text" id="ocrResultText"></div>
+            <div class="ocr-actions">
+              <button id="copyOcrResultBtn" class="btn btn-small">📋 复制</button>
+              <button id="autoFillBtn" class="btn btn-small btn-success">✍️ 自动填充</button>
+            </div>
+          </div>
+          
+          <!-- 识别状态 -->
+          <div id="ocrStatus" class="status-text"></div>
+        </div>
+      </section>
+
+      <!-- 单图片结果展示区 -->
+      <section id="resultSection" class="result-section hidden">
+        <h3>📊 图片提取结果</h3>
+        
+        <!-- 选择器信息 -->
+        <div class="info-group">
+          <label>🎯 生成的选择器:</label>
+          <div class="selector-box">
+            <code id="selectorText"></code>
+            <button id="copySelectorBtn" class="btn-icon" title="复制选择器">📋</button>
+          </div>
+        </div>
+
+        <!-- 元素信息 -->
+        <div class="info-group">
+          <label>ℹ️ 元素信息:</label>
+          <div class="info-details">
+            <div><strong>网址:</strong> <span id="urlText"></span></div>
+            <div><strong>标签:</strong> <span id="tagText"></span></div>
+            <div><strong>尺寸:</strong> <span id="sizeText"></span></div>
+          </div>
+        </div>
+
+        <!-- 图片预览 -->
+        <div class="info-group">
+          <label>🖼️ 图片预览:</label>
+          <div class="image-preview">
+            <img id="previewImage" alt="提取的图片">
+          </div>
+          <button id="downloadBtn" class="btn btn-secondary">
+            <span class="icon">💾</span>
+            下载图片
+          </button>
+        </div>
+      </section>
+
+      <!-- 使用说明 -->
+      <section class="help-section">
+        <h3>💡 使用说明</h3>
+        <div style="margin-bottom: 15px;">
+          <strong>🔗 配对模式（推荐）：</strong>
+          <ol style="margin-top: 5px;">
+            <li>点击"配对选择"按钮</li>
+            <li>先点击验证码图片</li>
+            <li>再点击对应的输入框</li>
+            <li>配对完成后可点击"高亮显示"测试</li>
+          </ol>
+        </div>
+        <div>
+          <strong>🖼️ 单图片模式：</strong>
+          <ol style="margin-top: 5px;">
+            <li>点击"仅选择图片"按钮</li>
+            <li>点击要提取的图片</li>
+            <li>查看生成的选择器和提取的图片</li>
+          </ol>
+        </div>
+        <p style="margin-top: 10px; color: #666; font-size: 12px;">
+          💡 提示：按 ESC 键可以取消选择
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <p>学习验证码识别插件的核心原理</p>
+    </footer>
+  </div>
+
+  <!-- 🆕 按顺序加载脚本 -->
+  <script src="../lib/ort.min.js"></script>
+  <script src="../lib/webocr.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,614 @@
+/* 全局样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  color: #333;
+  background: #f5f5f5;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.container {
+  background: white;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* 头部 */
+header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+header h1 {
+  font-size: 20px;
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+
+.subtitle {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+/* 主内容区 */
+main {
+  padding: 24px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* 操作按钮区 */
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.btn {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
+}
+
+.btn-secondary {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.btn-secondary:hover {
+  background: #d0d0d0;
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: white;
+}
+
+.btn-success:hover {
+  background: linear-gradient(135deg, #0e8678 0%, #2ed96c 100%);
+}
+
+.btn-success:disabled {
+  background: #ccc;
+  color: #999;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.icon {
+  font-size: 16px;
+}
+
+/* 状态提示 */
+.status {
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  text-align: center;
+  font-size: 13px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #90caf9;
+}
+
+.status.success {
+  background: #e8f5e9;
+  color: #388e3c;
+  border-color: #81c784;
+}
+
+.status.error {
+  background: #ffebee;
+  color: #d32f2f;
+  border-color: #ef5350;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* 结果展示区 */
+.result-section {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.result-section h3 {
+  font-size: 16px;
+  margin-bottom: 15px;
+  color: #667eea;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 8px;
+}
+
+/* 信息组 */
+.info-group {
+  margin-bottom: 20px;
+}
+
+.info-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #555;
+  font-size: 13px;
+}
+
+/* 选择器框 */
+.selector-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.selector-box code {
+  flex: 1;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #d63384;
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+.btn-icon {
+  background: #667eea;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: #5568d3;
+  transform: scale(1.1);
+}
+
+.btn-icon:active {
+  transform: scale(0.95);
+}
+
+/* 信息详情 */
+.info-details {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.info-details div {
+  padding: 6px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.info-details div:not(:last-child) {
+  border-bottom: 1px solid #e9ecef;
+}
+
+.info-details strong {
+  color: #667eea;
+  margin-right: 8px;
+}
+
+.info-details span {
+  color: #666;
+}
+
+/* 图片预览 */
+.image-preview {
+  background: #f8f9fa;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 12px;
+  min-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-preview img {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 使用说明 */
+.help-section {
+  margin-top: 25px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 15px;
+  border-left: 4px solid #667eea;
+}
+
+.help-section h3 {
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: #667eea;
+}
+
+.help-section ol {
+  margin-left: 20px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #666;
+}
+
+.help-section li {
+  margin-bottom: 6px;
+}
+
+/* 页脚 */
+footer {
+  background: #f8f9fa;
+  padding: 15px;
+  text-align: center;
+  border-top: 1px solid #dee2e6;
+  font-size: 12px;
+  color: #999;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* OCR 识别功能样式 */
+.ocr-section {
+  margin: 15px 0;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.ocr-result {
+  margin-top: 15px;
+  padding: 15px;
+  background: white;
+  border-radius: 6px;
+  border: 2px solid #28a745;
+}
+
+.result-text {
+  font-size: 32px;
+  font-weight: bold;
+  color: #007bff;
+  padding: 15px;
+  text-align: center;
+  letter-spacing: 6px;
+  font-family: 'Courier New', Monaco, monospace;
+  background: #f0f8ff;
+  border-radius: 4px;
+  margin: 10px 0;
+  user-select: all;
+}
+
+.ocr-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 13px;
+  flex: 1;
+}
+
+.btn-success {
+  background: #28a745;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #218838;
+}
+
+.btn-success:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.status-text {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.status-text.info {
+  background: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+.status-text.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-text.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.status-text:empty {
+  display: none;
+}
+
+/* 加载动画 */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.btn:disabled {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* ========== 自动模式样式 ========== */
+
+.auto-mode-section {
+  background: linear-gradient(135deg, #f8f9ff 0%, #f0f0ff 100%);
+  border: 1px solid #d4d4f7;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 15px;
+}
+
+.auto-mode-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.auto-mode-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+}
+
+.auto-mode-title .icon {
+  font-size: 18px;
+}
+
+/* Toggle Switch (iOS 风格) */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #ccc;
+  border-radius: 26px;
+  transition: 0.3s;
+}
+
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.3s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(22px);
+}
+
+/* 自动模式控制按钮区 */
+.auto-mode-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.auto-mode-controls .btn-small {
+  padding: 5px 10px;
+  font-size: 12px;
+  flex: 0 0 auto;
+}
+
+.auto-scan-status {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 12px;
+  flex: 1;
+  text-align: center;
+  min-width: 80px;
+}
+
+.auto-scan-status.off {
+  color: #999;
+  background: #f0f0f0;
+}
+
+.auto-scan-status.active {
+  color: #667eea;
+  background: #e8e8ff;
+  animation: scanPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes scanPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.auto-scan-count {
+  font-size: 11px;
+  color: #888;
+  white-space: nowrap;
+}
+
+/* 自动日志列表 */
+.auto-log-list {
+  max-height: 250px;
+  overflow-y: auto;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+}
+
+.auto-log-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  border-bottom: 1px solid #eee;
+  animation: fadeIn 0.2s ease;
+}
+
+.auto-log-entry:last-child {
+  border-bottom: none;
+}
+
+.auto-log-entry .log-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  width: 20px;
+  text-align: center;
+}
+
+.auto-log-entry .log-msg {
+  flex: 1;
+  color: #555;
+  word-break: break-all;
+}
+
+.auto-log-entry .log-time {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: #aaa;
+  white-space: nowrap;
+}
+
+.auto-log-entry.found { background: #fff8e1; }
+.auto-log-entry.success { background: #e8f5e9; }
+.auto-log-entry.filled { background: #e3f2fd; }
+.auto-log-entry.warn { background: #fff3e0; }
+.auto-log-entry.error { background: #ffebee; }
+.auto-log-entry.info { background: #f5f5f5; }
+
+/* 自动日志清空按钮 */
+#clearAutoLogBtn {
+  padding: 4px 8px;
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #888;
+}
+
+#clearAutoLogBtn:hover {
+  background: #fee;
+  color: #d32f2f;
+  border-color: #fcc;
+}
+
