@@ -627,47 +627,58 @@ class ContentWebOCR {
   }
 
   async function autoScanCaptcha() {
-    if (!autoScanEnabled) return;
+    if (!autoScanEnabled) return [];
 
-    const imgs = document.querySelectorAll('img');
     const foundPairs = [];
 
-    for (const img of imgs) {
-      // 跳过不可见图片
-      if (img.offsetParent === null && img.naturalWidth === 0) continue;
-      // 跳过太小的图（不太可能是验证码）
-      if (img.naturalWidth < 40 || img.naturalHeight < 20) continue;
+    // 扫描所有可能是验证码的元素
+    const candidates = document.querySelectorAll('img, canvas, [class*="captcha"] img, [id*="captcha"] img, [class*="code"] img, [id*="code"] img, a[class*="captcha"], a[class*="refresh"]');
 
-      const input = findInputForImage(img);
+    for (const el of candidates) {
+      const tag = el.tagName.toLowerCase();
+      let imageData = null;
+      let width = 0, height = 0;
+
+      if (tag === 'img') {
+        if (el.naturalWidth < 40 || el.naturalHeight < 20) continue;
+        if (el.offsetParent === null && el.naturalWidth === 0) continue;
+        try { imageData = extractFromImg(el); } catch (e) { continue; }
+        width = el.naturalWidth;
+        height = el.naturalHeight;
+      } else if (tag === 'canvas') {
+        if (el.width < 40 || el.height < 20) continue;
+        try { imageData = el.toDataURL('image/png'); } catch (e) { continue; }
+        width = el.width;
+        height = el.height;
+      } else {
+        // a/div/span 等 - 检查 background-image
+        const bg = window.getComputedStyle(el).backgroundImage;
+        if (!bg || bg === 'none') continue;
+        const urlMatch = bg.match(/url\(["']?(.+?)["']?\)/);
+        if (!urlMatch || !urlMatch[1]) continue;
+        try {
+          imageData = await extractBackgroundImage(el);
+          if (!imageData) continue;
+        } catch (e) { continue; }
+        width = el.offsetWidth;
+        height = el.offsetHeight;
+        if (width < 40 || height < 20) continue;
+      }
+
+      const input = findInputForImage(el);
       if (!input) continue;
 
       // 生成选择器
       const selector = new ElementSelector();
-      const imgSelector = selector.generate(img);
+      const imgSelector = selector.generate(el);
       const inputSelector = selector.generate(input);
-
       if (!imgSelector || !inputSelector) continue;
 
-      // 提取图片数据
-      let imageData = null;
-      try {
-        const tagName = img.tagName.toLowerCase();
-        if (tagName === 'img') {
-          imageData = extractFromImg(img);
-        } else if (tagName === 'canvas') {
-          imageData = img.toDataURL('image/png');
-        }
-        if (!imageData) continue;
-      } catch (e) {
-        continue;
-      }
-
-      // 去重：同一张图不重复
-      const hash = hashImageBase64(imageData);
+      // 去重
+      const hash = imageData.substring(Math.max(0, imageData.length - 128));
       if (scannedImageHashes.has(hash)) continue;
       scannedImageHashes.add(hash);
 
-      // 限制 Set 大小防止内存泄漏
       if (scannedImageHashes.size > 200) {
         const entries = Array.from(scannedImageHashes);
         scannedImageHashes.clear();
@@ -675,35 +686,39 @@ class ContentWebOCR {
       }
 
       foundPairs.push({
-        image: {
-          selector: imgSelector,
-          imageData: imageData,
-          tagName: 'img',
-          width: img.naturalWidth || img.offsetWidth,
-          height: img.naturalHeight || img.offsetHeight
-        },
-        input: {
-          selector: inputSelector,
-          tagName: input.tagName.toLowerCase(),
-          placeholder: input.placeholder || '',
-          name: input.name || ''
-        },
-        url: window.location.href,
-        host: window.location.host,
-        timestamp: Date.now(),
-        autoDetected: true
+        image: { selector: imgSelector, imageData, tagName: tag, width, height },
+        input: { selector: inputSelector, tagName: input.tagName.toLowerCase(),
+          placeholder: input.placeholder || '', name: input.name || '' },
+        url: window.location.href, host: window.location.host,
+        timestamp: Date.now(), autoDetected: true
       });
     }
 
-    // 发送检测到的配对给 sidepanel
     for (const pair of foundPairs) {
-      chrome.runtime.sendMessage({
-        action: 'autoPairDetected',
-        data: pair
-      }).catch(() => {});
+      chrome.runtime.sendMessage({ action: 'autoPairDetected', data: pair }).catch(() => {});
     }
 
     return foundPairs;
+  }
+
+  async function extractBackgroundImage(el) {
+    const bg = window.getComputedStyle(el).backgroundImage;
+    const match = bg.match(/url\(["']?(.+?)["']?\)/);
+    if (!match) return null;
+    const url = match[1];
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    return new Promise((resolve) => {
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth;
+        c.height = img.naturalHeight;
+        c.getContext('2d').drawImage(img, 0, 0);
+        resolve(c.toDataURL('image/png'));
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
   }
 
   // ==================== 本地 OCR + 全自动识别 ====================
@@ -832,15 +847,12 @@ class ContentWebOCR {
     input.value = value;
     input.focus();
 
-    // 触发多种事件确保网站能检测到
     const events = ['input', 'change', 'blur', 'focus', 'keydown', 'keyup'];
     for (const evtName of events) {
-      try {
-        input.dispatchEvent(new Event(evtName, { bubbles: true }));
-      } catch (e) {}
+      try { input.dispatchEvent(new Event(evtName, { bubbles: true })); } catch (e) {}
     }
 
-    // React 兼容: 触发原生 input setter
+    // React/Vue 兼容
     try {
       const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
         window.HTMLInputElement.prototype, 'value'
@@ -849,6 +861,19 @@ class ContentWebOCR {
       input.dispatchEvent(new Event('input', { bubbles: true }));
       input.dispatchEvent(new Event('change', { bubbles: true }));
     } catch (e) {}
+
+    // 绿色闪烁提示填充成功
+    const origBg = input.style.backgroundColor;
+    input.style.transition = 'background-color 0.3s';
+    input.style.backgroundColor = '#d4edda';
+    setTimeout(() => { input.style.backgroundColor = origBg; }, 1500);
+
+    // 在输入框旁加个 ✓ 标记
+    const check = document.createElement('span');
+    check.textContent = ' ✓';
+    check.style.cssText = 'color:#28a745;font-weight:bold;font-size:16px;margin-left:4px;';
+    input.parentElement.insertBefore(check, input.nextSibling);
+    setTimeout(() => check.remove(), 3000);
 
     return { success: true, message: '填充成功' };
   }
