@@ -1,6 +1,6 @@
 // Content Script - 注入到网页，负责元素选择和图片提取
 
-(function() {
+(async function() {
   'use strict';
 
   let isPickMode = false;
@@ -611,8 +611,16 @@
 
   async function initContentOCR() {
     if (ocrReady && ocrEngine && ocrEngine.session) return true;
+
+    // 等待最多 15 秒，每 500ms 重试一次（处理脚本延迟加载）
+    for (let attempt = 0; attempt < 30; attempt++) {
+      if (window.WebOCR && window.ort) break;
+      if (attempt === 0) console.log('AutoOCR: 等待 ONNX Runtime 就绪...');
+      await new Promise(r => setTimeout(r, 500));
+    }
+
     if (!window.WebOCR || !window.ort) {
-      console.warn('AutoOCR: WebOCR/ort 异常缺失，请刷新页面');
+      console.warn('AutoOCR: 超时等待后 WebOCR/ort 仍不可用，请重新加载扩展');
       return false;
     }
 
@@ -705,9 +713,23 @@
     scannedImageHashes.clear();
   }
 
-  // Content script 加载时：依赖已通过 manifest 注入，直接初始化
-  function checkAndAutoInit() {
-    console.log('AutoOCR: 依赖已就绪，等待 initAutoMode 消息启动');
+  // Content script 加载时：直接尝试自动初始化
+  async function checkAndAutoInit() {
+    // 检查自动模式是否开启
+    const storage = await chrome.storage.local.get(['autoModeEnabled']).catch(() => ({}));
+    const autoModeEnabled = storage.autoModeEnabled !== false; // 默认开启
+
+    if (!autoModeEnabled) {
+      console.log('AutoOCR: 自动模式已关闭');
+      return;
+    }
+
+    // 等待 WebOCR + ort 就绪（manifest 注入需要一点时间）
+    const ok = await initContentOCR();
+    if (ok) {
+      startAutoScan(AUTO_SCAN_INTERVAL);
+      console.log('AutoOCR: 自启动成功');
+    }
   }
   checkAndAutoInit();
 
