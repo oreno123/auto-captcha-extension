@@ -12,8 +12,14 @@
   "host_permissions": [
     "<all_urls>"
   ],
+  "icons": {
+    "16": "眼睛.png",
+    "48": "眼睛.png",
+    "128": "眼睛.png"
+  },
   "action": {
-    "default_title": "验证码选择器（点击打开侧边栏）"
+    "default_icon": "眼睛.png",
+    "default_title": "AutoCaptcha - 点击打开侧边栏"
   },
   "side_panel": {
     "default_path": "sidepanel/sidepanel.html"
