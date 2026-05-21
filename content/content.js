@@ -1,5 +1,104 @@
 // Content Script - 注入到网页，负责元素选择和图片提取
 
+// 内嵌 WebOCR（不依赖 webocr.js 外部文件）
+class ContentWebOCR {
+  constructor() {
+    this.MODEL_URL = chrome.runtime.getURL('models/common_q8.onnx');
+    ort.env.wasm.wasmPaths = chrome.runtime.getURL('wasm/');
+    ort.env.wasm.numThreads = 1;
+    ort.env.wasm.simd = true;
+    this.CHARSET = {
+      '13':'6','55':'f','209':'p','210':'L','297':'Y','306':'w','309':'3',
+      '311':'F','320':'m','521':'X','598':'G','689':'x','782':'i','897':'T',
+      '901':'N','1072':'v','1150':'c','1204':'B','1503':'n','1849':'Q',
+      '1965':'H','2113':'K','2185':'W','2341':'P','2376':'r','2457':'l',
+      '2547':'E','2621':'Z','2714':'s','2851':'2','3073':'z','3128':'D',
+      '3157':'O','3606':'4','4018':'1','4102':'t','4393':'b','4429':'o',
+      '4588':'u','4725':'9','4730':'j','4733':'0','4919':'8','5223':'5',
+      '5428':'e','5461':'A','5629':'R','5690':'g','5737':'k','5855':'S',
+      '6554':'I','6794':'7','6810':'d','6887':'V','7216':'J','7266':'a',
+      '7412':'h','7576':'q','7712':'U','7844':'M','7877':'y','7961':'C',
+      '1151':'c'
+    };
+    this.session = null;
+    this.isLoadingModel = false;
+  }
+
+  async loadModel() {
+    if (this.session || this.isLoadingModel) return;
+    this.isLoadingModel = true;
+    try {
+      this.session = await ort.InferenceSession.create(this.MODEL_URL, {
+        executionProviders: ['wasm'],
+        graphOptimizationLevel: 'all'
+      });
+      console.log('ContentWebOCR: 模型加载成功');
+    } catch (e) {
+      console.error('ContentWebOCR: 模型加载失败', e);
+      throw e;
+    } finally {
+      this.isLoadingModel = false;
+    }
+  }
+
+  preprocessImage(imageElement) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const targetHeight = 64;
+    const originalWidth = imageElement.naturalWidth;
+    const originalHeight = imageElement.naturalHeight;
+    const targetWidth = Math.floor(originalWidth * (targetHeight / originalHeight));
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    ctx.drawImage(imageElement, 0, 0, targetWidth, targetHeight);
+    const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
+    const data = imageData.data;
+    const inputData = new Float32Array(targetWidth * targetHeight);
+    for (let i = 0; i < data.length; i += 4) {
+      const grayscale = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      inputData[i / 4] = grayscale / 255.0;
+    }
+    return new ort.Tensor('float32', inputData, [1, 1, 64, targetWidth]);
+  }
+
+  decodeOutput(outputTensor, beamWidth = 3) {
+    const outputData = outputTensor.data;
+    const seqLen = outputTensor.dims[0];
+    const numClasses = outputTensor.dims[2];
+    let paths = [{ text: '', score: 0, prev: -1 }];
+    for (let t = 0; t < seqLen; t++) {
+      const nextPaths = [];
+      for (const path of paths) {
+        const probs = outputData.slice(t * numClasses, (t + 1) * numClasses);
+        const sorted = Array.from(probs).map((p, i) => ({ prob: p, index: i }))
+          .sort((a, b) => b.prob - a.prob).slice(0, beamWidth);
+        for (const { prob, index } of sorted) {
+          const char = this.CHARSET[index] || '';
+          const logProb = Math.log(prob + 1e-12);
+          let newText = path.text;
+          if (index !== 0 && index !== path.prev) newText += char;
+          nextPaths.push({ text: newText, score: path.score + logProb, prev: index });
+        }
+      }
+      paths = nextPaths.sort((a, b) => b.score - a.score).slice(0, beamWidth);
+    }
+    return paths.length > 0 ? paths[0].text : '';
+  }
+
+  async classify(imageElement) {
+    if (!this.session && !this.isLoadingModel) await this.loadModel();
+    let attempts = 0;
+    while (!this.session && attempts < 10) {
+      await new Promise(r => setTimeout(r, 500));
+      attempts++;
+    }
+    if (!this.session) return '';
+    const inputTensor = this.preprocessImage(imageElement);
+    const results = await this.session.run({ input1: inputTensor });
+    return this.decodeOutput(Object.values(results)[0]);
+  }
+}
+
 (async function() {
   'use strict';
 
@@ -612,26 +711,20 @@
   async function initContentOCR() {
     if (ocrReady && ocrEngine && ocrEngine.session) return true;
 
-    // 等待最多 15 秒，每 500ms 重试一次（处理脚本延迟加载）
-    for (let attempt = 0; attempt < 30; attempt++) {
-      const hasWebOCR = typeof window.WebOCR !== 'undefined';
-      const hasOrt = typeof window.ort !== 'undefined';
-      if (hasWebOCR && hasOrt) break;
-      if (attempt === 0) console.log('AutoOCR: 等待 ONNX Runtime 就绪...', { hasWebOCR, hasOrt });
-      if (attempt % 6 === 5) console.log('AutoOCR: 仍在等待...', { attempt: attempt + 1, hasWebOCR, hasOrt });
+    // 等待最多 10 秒，每 500ms 重试一次（等待 ort 就绪）
+    for (let attempt = 0; attempt < 20; attempt++) {
+      if (typeof window.ort !== 'undefined') break;
+      if (attempt === 0) console.log('AutoOCR: 等待 ONNX Runtime 就绪...');
       await new Promise(r => setTimeout(r, 500));
     }
 
-    if (!window.WebOCR || !window.ort) {
-      console.warn('AutoOCR: 超时等待 15s 后 WebOCR/ort 仍不可用', {
-        hasWebOCR: typeof window.WebOCR,
-        hasOrt: typeof window.ort
-      });
+    if (typeof window.ort === 'undefined') {
+      console.warn('AutoOCR: ort 不可用，请重新加载扩展');
       return false;
     }
 
     try {
-      ocrEngine = new WebOCR();
+      ocrEngine = new ContentWebOCR();
       await ocrEngine.loadModel();
       ocrReady = true;
       console.log('AutoOCR: 模型加载完成，开始自动识别');
