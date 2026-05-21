@@ -919,5 +919,48 @@ class ContentWebOCR {
   });
 
   console.log('验证码选择器 Content Script 已加载');
+
+  // 调试：暴露到 window 方便在控制台手动测试
+  if (typeof window !== 'undefined') {
+    window.__captchaDebug = async () => {
+      console.log('=== AutoCaptcha 调试 ===');
+      console.log('autoScanEnabled:', autoScanEnabled);
+      console.log('ocrReady:', ocrReady);
+      console.log('ort available:', typeof window.ort);
+      console.log('ContentWebOCR available:', typeof ContentWebOCR);
+
+      // 测试扫描
+      console.log('--- 扫描验证码 ---');
+      const allImgs = document.querySelectorAll('img');
+      console.log('页面 img 标签数:', allImgs.length);
+      allImgs.forEach((img, i) => {
+        console.log(`  img[${i}]:`, img.src.substring(0, 80), `${img.naturalWidth}x${img.naturalHeight}`);
+      });
+
+      // 检查 captcha 相关元素
+      const captchaEls = document.querySelectorAll('[id*="captcha"], [class*="captcha"], [id*="Captcha"], [class*="Captcha"]');
+      console.log('captcha 相关元素:', captchaEls.length);
+      captchaEls.forEach(el => {
+        console.log('  ', el.tagName, el.id, el.className, el.offsetWidth + 'x' + el.offsetHeight);
+        const bg = window.getComputedStyle(el).backgroundImage;
+        if (bg && bg !== 'none') console.log('    background-image:', bg.substring(0, 100));
+      });
+
+      // 测试扫描
+      console.log('--- 执行自动扫描 ---');
+      const pairs = await autoScanCaptcha();
+      console.log('找到配对:', pairs ? pairs.length : 0, pairs);
+      if (pairs && pairs.length > 0) {
+        console.log('第一组数据:', {
+          imgSelector: pairs[0].image.selector,
+          inputSelector: pairs[0].input.selector,
+          imageSize: pairs[0].image.width + 'x' + pairs[0].image.height,
+          dataLen: pairs[0].image.imageData ? pairs[0].image.imageData.length : 0
+        });
+      }
+      console.log('=== 调试结束 ===');
+    };
+    console.log('💡 在控制台输入 __captchaDebug() 可手动测试自动扫描');
+  }
 })();
 
