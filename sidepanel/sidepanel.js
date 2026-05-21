@@ -170,25 +170,9 @@ class SidePanelController {
    * 注入 content script
    */
   async injectContentScript(tabId, injectOCR = false) {
-    try {
-      // selector.js 和 content.js 已通过 manifest content_scripts 自动注入
-      // 这里只需要按需注入 OCR 引擎
-      if (injectOCR) {
-        await chrome.scripting.executeScript({
-          target: { tabId: tabId },
-          files: ['lib/ort.min.js']
-        });
-        await chrome.scripting.executeScript({
-          target: { tabId: tabId },
-          files: ['lib/webocr.js']
-        });
-      }
-
-      console.log('Content script 注入成功');
-    } catch (error) {
-      console.error('注入失败:', error);
-      throw new Error('脚本注入失败，请刷新页面后重试');
-    }
+    // ort.min.js + webocr.js + content.js 已通过 manifest content_scripts 自动注入
+    // 无需再手动注入，只需确保消息能到达
+    console.log('Content script 已就绪 (manifest 注入)');
   }
 
   /**
@@ -741,8 +725,8 @@ class SidePanelController {
         return;
       }
 
-      // 注入 OCR 依赖（如果还没有的话）
-      await this.injectContentScript(tab.id, this.autoMode);
+      // 脚本已由 manifest 注入，只需确保消息通道畅通
+      await this.injectContentScript(tab.id);
 
       if (this.autoMode) {
         chrome.tabs.sendMessage(tab.id, { action: 'startAutoMode', data: { interval: 2000 } }, (response) => {
