@@ -612,7 +612,7 @@
   async function initContentOCR() {
     if (ocrReady && ocrEngine && ocrEngine.session) return true;
     if (!window.WebOCR || !window.ort) {
-      console.log('AutoOCR: WebOCR/ort 尚未注入，等待 background 注入...');
+      console.warn('AutoOCR: WebOCR/ort 异常缺失，请刷新页面');
       return false;
     }
 
@@ -705,11 +705,9 @@
     scannedImageHashes.clear();
   }
 
-  // Content script 加载时：检查 OCR 依赖是否已注入
+  // Content script 加载时：依赖已通过 manifest 注入，直接初始化
   function checkAndAutoInit() {
-    if (typeof WebOCR !== 'undefined' && typeof ort !== 'undefined') {
-      console.log('AutoOCR: 依赖已就绪，监听 initAutoMode 消息');
-    }
+    console.log('AutoOCR: 依赖已就绪，等待 initAutoMode 消息启动');
   }
   checkAndAutoInit();
 
