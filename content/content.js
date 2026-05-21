@@ -614,13 +614,19 @@
 
     // 等待最多 15 秒，每 500ms 重试一次（处理脚本延迟加载）
     for (let attempt = 0; attempt < 30; attempt++) {
-      if (window.WebOCR && window.ort) break;
-      if (attempt === 0) console.log('AutoOCR: 等待 ONNX Runtime 就绪...');
+      const hasWebOCR = typeof window.WebOCR !== 'undefined';
+      const hasOrt = typeof window.ort !== 'undefined';
+      if (hasWebOCR && hasOrt) break;
+      if (attempt === 0) console.log('AutoOCR: 等待 ONNX Runtime 就绪...', { hasWebOCR, hasOrt });
+      if (attempt % 6 === 5) console.log('AutoOCR: 仍在等待...', { attempt: attempt + 1, hasWebOCR, hasOrt });
       await new Promise(r => setTimeout(r, 500));
     }
 
     if (!window.WebOCR || !window.ort) {
-      console.warn('AutoOCR: 超时等待后 WebOCR/ort 仍不可用，请重新加载扩展');
+      console.warn('AutoOCR: 超时等待 15s 后 WebOCR/ort 仍不可用', {
+        hasWebOCR: typeof window.WebOCR,
+        hasOrt: typeof window.ort
+      });
       return false;
     }
 
@@ -713,22 +719,15 @@
     scannedImageHashes.clear();
   }
 
-  // Content script 加载时：直接尝试自动初始化
+  // Content script 加载时：直接自动初始化，不依赖 storage
   async function checkAndAutoInit() {
-    // 检查自动模式是否开启
-    const storage = await chrome.storage.local.get(['autoModeEnabled']).catch(() => ({}));
-    const autoModeEnabled = storage.autoModeEnabled !== false; // 默认开启
-
-    if (!autoModeEnabled) {
-      console.log('AutoOCR: 自动模式已关闭');
-      return;
-    }
-
-    // 等待 WebOCR + ort 就绪（manifest 注入需要一点时间）
+    console.log('AutoOCR: 启动自动扫描...');
     const ok = await initContentOCR();
     if (ok) {
       startAutoScan(AUTO_SCAN_INTERVAL);
       console.log('AutoOCR: 自启动成功');
+    } else {
+      console.error('AutoOCR: 初始化失败，请检查扩展是否已重新加载');
     }
   }
   checkAndAutoInit();
